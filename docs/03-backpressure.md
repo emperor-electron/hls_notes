@@ -87,8 +87,8 @@ deadlocks the instant someone selects 1080p is this, every time.
 |---|---|---|---|
 | 8 b | ≤ 32 | ≤ 256 | SRL / LUTRAM — free |
 | 8 b | 1928 | 15 Kb | 1 BRAM18 |
-| 24 b | 1928 | 46 Kb | 3 BRAM18 |
-| 24 b | 4104 | 98 Kb | 6 BRAM18 |
+| 24 b | 1928 | 45 Kb | 3 BRAM18 |
+| 24 b | 4104 | 96 Kb | 6 BRAM18 |
 
 Skew FIFOs on 8-bit video are cheap. When they stop being cheap (24-bit at 4K),
 the right move is to **move the fan-out point later** so less data is in

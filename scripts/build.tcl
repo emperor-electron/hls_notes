@@ -77,6 +77,7 @@ array set CFG {
     cosim_args ""
     csim_args  ""
     expect_ii  0
+    blackbox   {}
 }
 set cfg_file [file join $EX_DIR hls_config.tcl]
 if {![file exists $cfg_file]} { hls::die "missing $cfg_file" }
@@ -132,6 +133,30 @@ foreach f $CFG(srcs) {
     set p [file join $EX_DIR $f]
     if {![file exists $p]} { hls::die "source not found: $p" }
     add_files $p -cflags "$INC $CFG(cflags)"
+}
+
+# RTL blackbox descriptions.
+#
+# GOTCHA: the "rtl_files" and "c_files" paths inside the JSON are resolved
+# relative to the CURRENT WORKING DIRECTORY of the tool, NOT relative to the
+# JSON itself. The Xilinx example gets away with bare filenames only because
+# it runs the script from the directory holding them. Build from anywhere else
+# and you get:
+#   ERROR: [HLS 200-646] RTL file '...' in blackbox json file '...'
+#   does not exist
+#
+# So cd into the JSON's directory for the duration of the add. HLS resolves
+# and stores the paths eagerly, so restoring the cwd afterwards is safe.
+#
+# Note a blackbox JSON is added INSTEAD of adding its C model with add_files --
+# listing the model in CFG(srcs) as well is a duplicate-symbol link error.
+foreach f $CFG(blackbox) {
+    set p [file join $EX_DIR $f]
+    if {![file exists $p]} { hls::die "blackbox json not found: $p" }
+    set resolved [hls::resolve_blackbox_json $p \
+                    [file join $PROJ _blackbox] "$INC $CFG(cflags)"]
+    hls::info_ "blackbox: $f -> [file tail $resolved] (paths absolutised)"
+    add_files -blackbox $resolved
 }
 
 foreach f $CFG(tb) {

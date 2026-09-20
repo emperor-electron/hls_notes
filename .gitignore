@@ -12,3 +12,12 @@ hs_err_pid*.log
 .autopilot/
 *.bak
 *~
+
+# xsim droppings
+xsim_run/
+*/xsim_run/
+xvlog.pb
+xelab.pb
+xsim.dir/
+*.wdb
+webtalk*.log

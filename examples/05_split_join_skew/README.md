@@ -66,8 +66,8 @@ Everything at or below `cols+1` reports `HANG`. `sweep.py` records a timeout as
 | Branch data | Max cols | Depth | Bits | BRAM18 |
 |---|---|---|---|---|
 | 8-bit gray | 1920 | 1928 | 15 Kb | 1 |
-| 24-bit RGB | 1920 | 1928 | 46 Kb | 3 |
-| 24-bit RGB | 4096 | 4104 | 98 Kb | 6 |
+| 24-bit RGB | 1920 | 1928 | 45 Kb | 3 |
+| 24-bit RGB | 4096 | 4104 | 96 Kb | 6 |
 
 Skew FIFOs on 8-bit video are cheap. When they stop being cheap, move the
 fan-out point *later* so less data is in flight — do not shave the depth and

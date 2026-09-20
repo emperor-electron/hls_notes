@@ -39,6 +39,40 @@ Symptom → cause → where to read.
 | Frame tears | Software races the writer; needs `ap_done` or double-buffering | [ex. 08](../examples/08_axis_to_mem_dma) |
 | Half-old / half-new frame after a register write | Config not latched on SOF | [docs/05 §5.5](05-video-pipeline-patterns.md#55-frame-level-state) |
 
+## 8.3b Configuration
+
+| Symptom | Cause | See |
+|---|---|---|
+| One frame has a colour cast after a config change | Multi-word config torn across bus transactions | [docs/09 §9.4](09-ps-control-registers.md#94-the-sampling-problem-and-the-fix) |
+| Top of frame uses old setting, bottom uses new | Register sampled mid-frame; latch on SOF | [docs/09 §9.4](09-ps-control-registers.md#94-the-sampling-problem-and-the-fix) |
+| First frame(s) after boot use wrong settings | No `seq_init`; counter starts equal to the reset value | [ex. 09](../examples/09_control_registers) |
+| Config stops applying after very long uptime | `if (seq > latched)` instead of `!=`; counter wrapped | [ex. 09](../examples/09_control_registers) |
+| Driver writes the wrong field after a code change | Hand-written offsets; struct field inserted mid-list | [docs/09 §9.3](09-ps-control-registers.md#93-the-generated-register-map-is-the-abi) |
+| No interrupt on a free-running block | `ap_ctrl_none` has no `ap_done`; poll a status register | [docs/09 §9.8](09-ps-control-registers.md#98-interrupts) |
+
+## 8.3c Custom RTL, fixed point and ap_* control
+
+| Symptom | Cause | See |
+|---|---|---|
+| `Cannot find blackbox RTL port 'logic'` (once per port) | Blackbox port list uses SystemVerilog types; HLS parses V2001 | [docs/13 §13.3](13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| `No 'module_clock_enable' in 'rtl_common_signal'` | Blackbox RTL must expose an `ap_ce` port | [docs/13 §13.3](13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| `Cannot find blackbox RTL port 'scl_o'` | A blackbox cannot own top-level I/O — use a sibling IP | [docs/13 §13.5](13-custom-rtl-integration.md#135-the-sibling-ip-pattern-what-to-use-for-ic) |
+| `[HLS 200-646] RTL file ... does not exist` | JSON paths resolve against the CWD, not the JSON | [docs/13 §13.3](13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| Undefined reference to the blackbox function at csim link | JSON's `c_file` path did not resolve; `cflag` had no includes | [docs/13 §13.3](13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| `[XSIM 43-4099] ... doesn't have a timescale` | Custom RTL is missing `` `timescale `` | [docs/13 §13.3](13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| Blackbox cosim hangs at `0 / N transactions` | `"II":"1"` declared on a non-pipelined blackbox (II must equal latency), or a constant argument was folded away and shifted the port map | [docs/13 §13.3](13-custom-rtl-integration.md#rtl_performance-is-a-contract-not-a-comment) |
+| Blackbox cosim reports pixel mismatches | The C model and the RTL disagree — write a standalone RTL unit test | [docs/13 §13.4](13-custom-rtl-integration.md#write-a-standalone-rtl-unit-test-first) |
+| `[COSIM 212-345] Cosim only supports ... 'ap_ctrl_none'` | Sequential tail on a free-running block; use `ap_ctrl_hs` | [docs/13 §13.3](13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| Block completes once and never restarts | Controller missed coincident `ap_ready`/`ap_done` | [docs/14 §14.2](14-ap-control-protocols.md#142-the-ap_ctrl_hs-handshake) |
+| Block "sometimes doesn't start" | `ap_start` pulsed instead of held until `ap_ready` | [docs/14 §14.2](14-ap-control-protocols.md#142-the-ap_ctrl_hs-handshake) |
+| `ap_done` stuck high | `ap_ctrl_chain` with `ap_continue` undriven | [docs/14 §14.3](14-ap-control-protocols.md#143-ap_ctrl_chain-and-ap_continue) |
+| Every other trigger ignored | `go` pulse dropped while busy | [ex. 13](../examples/13_ap_ctrl_latch) |
+| Occasional wrong result, not reproducible | `ap_stable` contract violated — config changed mid-run | [docs/14 §14.4](14-ap-control-protocols.md#144-latching-ps-registers-into-ap_stable-inputs) |
+| Image washed out but plausible | A pixel cast into a too-narrow `ap_fixed` coefficient type | [docs/12 §12.3](12-fixed-point.md#123-bit-growth-and-where-precision-is-actually-lost) |
+| Bright pixels turn black | `AP_WRAP` (the default) instead of `AP_SAT` | [docs/12 §12.1](12-fixed-point.md#121-the-type) |
+| Hardware differs from the model by fractions of an LSB | A narrow named intermediate is an unintended quantisation point | [docs/12 §12.3](12-fixed-point.md#123-bit-growth-and-where-precision-is-actually-lost) |
+| Debug signal "optimised away" | It is not an output, so HLS deleted it | [docs/15 §15.3](15-design-for-test.md#153-tier-2--debug-wires-and-an-ila) |
+
 ## 8.4 Too slow
 
 | Symptom | Cause | See |
@@ -59,7 +93,10 @@ Symptom → cause → where to read.
 | csynth estimate misses target | Over-constrain; HLS estimates are optimistic | [docs/06 §6.8](06-optimization-cookbook.md#68-timing-closure) |
 | csynth fine, Vivado WNS fails on `*_TREADY` | Combinational handshake path across a long route | `register both` — [docs/02 §2.2](02-axi-stream-interfaces.md#register-slices) |
 | 4 DSPs where you expected 1 | Operand exceeded 25×18 | [docs/06 §6.4](06-optimization-cookbook.md#64-operator-cost) |
-| 2× the expected BRAM | `MAX_COLS` set higher than you actually support | [docs/06 §6.9](06-optimization-cookbook.md#69-area) |
+| 2× the expected BRAM | `MAX_COLS` set higher than you actually support | [docs/11 §11.7](11-memory-resources.md#117-other-common-waste) |
+| URAM count == number of line buffers, each ~5% full | Unpacked line buffers bound to URAM | [docs/11 §11.4](11-memory-resources.md#114-the-rounding-loss-nobody-budgets-for) |
+| Surprise BRAM in the report | A local array became a memory — check the `Memory` row | [docs/11 §11.7](11-memory-resources.md#117-other-common-waste) |
+| Storage type changed after a tool upgrade | Relying on `impl=auto` | [docs/11 §11.3](11-memory-resources.md#113-binding) |
 
 ## 8.6 Tooling
 

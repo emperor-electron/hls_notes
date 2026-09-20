@@ -224,6 +224,76 @@ namespace eval hls {
     }
 
     # -------------------------------------------------------------------------
+    # Resolve a blackbox JSON into something that works from any directory.
+    #
+    # Two things in a blackbox JSON are fragile:
+    #
+    #  1. "rtl_files" and "c_files[].c_file" are resolved against the tool's
+    #     CURRENT WORKING DIRECTORY, not against the JSON. The Xilinx example
+    #     only works because its run_hls.tcl is launched from the directory
+    #     holding those files. Build from a repo root and you get
+    #       ERROR: [HLS 200-646] RTL file '...' does not exist
+    #     ...or, worse, the C model path is stored relative, silently fails to
+    #     resolve at csim time, and you get an undefined reference to the
+    #     blackbox function with no other explanation.
+    #
+    #  2. "cflag" defaults to empty, so the C MODEL is compiled with NO include
+    #     paths. Any model that includes a project header fails to build.
+    #
+    # Both are fixed by rewriting the JSON with absolute paths and real flags,
+    # into the build directory. Returns the path of the rewritten file.
+    # -------------------------------------------------------------------------
+    proc resolve_blackbox_json {src out_dir extra_cflags} {
+        set src [file normalize $src]
+        set dir [file dirname $src]
+        set fh [open $src r]
+        set txt [read $fh]
+        close $fh
+
+        set map {}
+
+        # Absolutise every "c_file" : "..." value.
+        foreach {m val} [regexp -all -inline {"c_file"\s*:\s*"([^"]+)"} $txt] {
+            if {[file pathtype $val] eq "relative"} {
+                set abs [file normalize [file join $dir $val]]
+                if {![file exists $abs]} { die "blackbox c_file not found: $abs" }
+                lappend map "\"$val\"" "\"$abs\""
+            }
+        }
+
+        # Absolutise the "rtl_files" array entries.
+        if {[regexp {"rtl_files"\s*:\s*\[([^\]]*)\]} $txt -> body]} {
+            foreach {m val} [regexp -all -inline {"([^"]+)"} $body] {
+                if {[file pathtype $val] eq "relative"} {
+                    set abs [file normalize [file join $dir $val]]
+                    if {![file exists $abs]} { die "blackbox rtl file not found: $abs" }
+                    lappend map "\"$val\"" "\"$abs\""
+                }
+            }
+        }
+
+        # Give the C model the same include flags the rest of the project gets.
+        # Done with string map on the exact matched text rather than regsub,
+        # because a regsub replacement string needs its own layer of backslash
+        # escaping and silently emits literal \" into the JSON if you get it
+        # wrong -- which then fails as "Problem parsing ... content".
+        if {$extra_cflags ne ""} {
+            foreach {m val} [regexp -all -inline {"cflag"\s*:\s*"([^"]*)"} $txt] {
+                lappend map $m "\"cflag\" : \"$val $extra_cflags\""
+            }
+        }
+
+        if {[llength $map]} { set txt [string map $map $txt] }
+
+        file mkdir $out_dir
+        set dst [file join $out_dir [file tail $src]]
+        set oh [open $dst w]
+        puts -nonewline $oh $txt
+        close $oh
+        return $dst
+    }
+
+    # -------------------------------------------------------------------------
     # csim log gate.
     #
     # csim_design DOES abort on a read from an empty stream:

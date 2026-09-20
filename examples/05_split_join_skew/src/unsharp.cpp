@@ -193,7 +193,7 @@ void unsharp_mask(gray_stream_t &src, gray_stream_t &dst,
      * one BRAM18. A 1920-wide design costs 8 x 1928 = 15 Kb, still one BRAM18
      * (which holds 18 Kb). Skew FIFOs on 8-bit video are cheap. They stop
      * being cheap when the branch carries a 24-bit RGB pixel at 4K
-     * (24 x 4104 = 98 Kb ~= 6 BRAM18) -- at which point the right move is to
+     * (24 x 4104 = 96 Kb ~= 6 BRAM18) -- at which point the right move is to
      * push the fan-out point later so less data is in flight, not to shave the
      * depth and hope.
      */

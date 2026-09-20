@@ -1,0 +1,58 @@
+{
+  "c_function_name": "fx_divide",
+  "rtl_top_module_name": "fx_divide",
+  "c_files": [
+    {
+      "c_file": "fx_divide_model.cpp",
+      "cflag": ""
+    }
+  ],
+  "rtl_files": [
+    "../rtl/fx_divide.sv"
+  ],
+  "c_parameters": [
+    {
+      "c_name": "num",
+      "c_port_direction": "in",
+      "rtl_ports": {
+        "data_read_in": "num"
+      }
+    },
+    {
+      "c_name": "den",
+      "c_port_direction": "in",
+      "rtl_ports": {
+        "data_read_in": "den"
+      }
+    },
+    {
+      "c_name": "quot",
+      "c_port_direction": "out",
+      "rtl_ports": {
+        "data_write_out": "quot",
+        "data_write_valid": "quot_vld"
+      }
+    }
+  ],
+  "rtl_common_signal": {
+    "module_clock": "ap_clk",
+    "module_reset": "ap_rst",
+    "module_clock_enable": "ap_ce",
+    "ap_ctrl_chain_protocol_idle": "ap_idle",
+    "ap_ctrl_chain_protocol_start": "ap_start",
+    "ap_ctrl_chain_protocol_ready": "ap_ready",
+    "ap_ctrl_chain_protocol_done": "ap_done",
+    "ap_ctrl_chain_protocol_continue": "ap_continue"
+  },
+  "rtl_performance": {
+    "latency": "49",
+    "II": "49"
+  },
+  "rtl_resource_usage": {
+    "FF": "140",
+    "LUT": "220",
+    "BRAM": "0",
+    "URAM": "0",
+    "DSP": "0"
+  }
+}

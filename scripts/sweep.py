@@ -142,11 +142,15 @@ def read_top(example: str) -> str:
 
 def build_point(args, point, solution):
     """Run one HLS build. Returns (rc, elapsed_seconds, timed_out)."""
+    # NOTE: `args.part` is the sweep AXIS (a list, or None when not swept), not
+    # a usable part name. The per-point fallback must come from
+    # --default-part. Conflating the two passes the literal string "None" to
+    # set_part and every point dies with "Part 'None' is not installed".
     tclargs = [
         f"example={args.example}",
         f"stage={args.stage}",
         f"solution={solution}",
-        f"part={point.get('part', args.part)}",
+        f"part={point.get('part', args.default_part)}",
         f"period={point.get('period', args.default_period)}",
     ]
     # Defines are passed through as a single cflags blob; build.tcl appends
@@ -192,6 +196,8 @@ def main():
     ap.add_argument("--part", action="append", default=None, metavar="part1,part2",
                     help="sweep the target part")
     ap.add_argument("--default-period", default="3.33")
+    ap.add_argument("--default-part", default="xczu7ev-ffvc1156-2-e",
+                    help="part used for points that do not sweep --part")
     ap.add_argument("--hls", default=os.environ.get("HLS", "vitis_hls"))
     ap.add_argument("--timeout", type=int, default=3600,
                     help="per-point timeout in seconds; a cosim hang is "

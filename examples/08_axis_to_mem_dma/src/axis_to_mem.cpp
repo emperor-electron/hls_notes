@@ -145,7 +145,7 @@ ROWS:
          * declared INSIDE the dataflow region and why it must be written
          * completely by the producer before the consumer reads it.
          *
-         * Cost: 2 x MAX_COLS x 32 bits = 2 x 1920 x 32 = 123 Kb ~= 4 BRAM36.
+         * Cost: 2 x MAX_COLS x 32 bits = 2 x 1920 x 32 = 120 Kb ~= 4 BRAM36.
          * That is the price of not halving your bandwidth. Note it is charged
          * per instance, so four of these in a design is 16 BRAM36.
          *

@@ -19,6 +19,7 @@ make csim  EX=03_line_buffer_sobel
 make synth EX=03_line_buffer_sobel
 make cosim EX=05_split_join_skew
 make regress                     # csim + csynth everything, QoR table at the end
+make sim-sv EX=13_ap_ctrl_latch  # SystemVerilog testbench in xsim
 ```
 
 Different tool or target:
@@ -50,6 +51,13 @@ for why that matters):
 | [06 — Optimisation cookbook](docs/06-optimization-cookbook.md) | II=1, partitioning, operator cost, timing, area |
 | [07 — Verification](docs/07-verification.md) | What csim/cosim can and cannot prove; tests that find bugs |
 | [08 — Troubleshooting index](docs/08-troubleshooting.md) | Symptom → cause → section |
+| [09 — PS control registers](docs/09-ps-control-registers.md) | `s_axilite`, the register-map ABI, atomic frame-synchronous config |
+| [10 — Line buffers & sliding windows](docs/10-line-buffers-and-sliding-windows.md) | The universal skeleton, borders, separable/running-sum kernels |
+| [11 — BRAM and URAM efficiency](docs/11-memory-resources.md) | Shape vs binding vs ports; why URAM line buffers waste 95% |
+| [12 — Fixed point & quantisation](docs/12-fixed-point.md) | `ap_fixed`, rounding-mode truth table, matching a reference model |
+| [13 — Custom SystemVerilog](docs/13-custom-rtl-integration.md) | RTL blackbox vs sibling IP; why an I²C core cannot be a blackbox |
+| [14 — `ap_*` control protocols](docs/14-ap-control-protocols.md) | `ap_ctrl_hs`/`chain`, latching PS registers into `ap_stable` |
+| [15 — Design for test](docs/15-design-for-test.md) | Counters, frame checksums, debug buses, ILA strategy |
 
 ---
 
@@ -67,8 +75,23 @@ Each is self-contained: `src/`, `tb/`, `hls_config.tcl`, `README.md`.
 | 06 | [rate_change_deadlock](examples/06_rate_change_deadlock) | **Deadlock family B:** data-dependent token counts; three fixes |
 | 07 | [frame_resync](examples/07_frame_resync) | Surviving a malformed upstream; the one-beat lookahead; status counters |
 | 08 | [axis_to_mem_dma](examples/08_axis_to_mem_dma) | `m_axi` bursts; ping-pong via `DATAFLOW` in a loop; cycles through memory |
+| 09 | [control_registers](examples/09_control_registers) | Atomic, frame-synchronous config via a generation counter; register-map ABI |
+| 10 | [storage_binding](examples/10_storage_binding) | **Sweepable** BRAM/URAM/LUTRAM; packing lines into width cuts URAM 14→2 |
+| 11 | [fixed_point_quant](examples/11_fixed_point_quant) | `ap_fixed` CCM; quantiser characterisation; bit-exact vs error-budget |
+| 12 | [rtl_blackbox](examples/12_rtl_blackbox) | Hand-written SystemVerilog divider called from HLS, verified in cosim |
+| 13 | [ap_ctrl_latch](examples/13_ap_ctrl_latch) | SV controller latching PS regs into `ap_stable`; verified in xsim |
 
 ---
+
+## Three measured results worth knowing
+
+| | |
+|---|---|
+| Unpacked line buffers in URAM are **5% utilised** | 14 URAM for 210 Kb that fits in one → [docs/11 §11.4](docs/11-memory-resources.md#114-the-rounding-loss-nobody-budgets-for) |
+| Packing lines into *width* cuts URAM **14 → 2** and halves FF/LUT | → [docs/11 §11.5](docs/11-memory-resources.md#115-pack-lines-into-width-not-into-count) |
+| Publishing status registers per-pixel cost **3.501 ns vs 2.697 ns** | Per-frame instead → [docs/06 §6.8](docs/06-optimization-cookbook.md#68-timing-closure) |
+| A **constant argument to an RTL blackbox** is folded away and silently shifts the port mapping | → [docs/13 §13.3](docs/13-custom-rtl-integration.md#133-the-rtl-blackbox-concretely) |
+| `ap_ready` and `ap_done` **coincide** on a non-pipelined block — a naive controller deadlocks | → [docs/14 §14.2](docs/14-ap-control-protocols.md#142-the-ap_ctrl_hs-handshake) |
 
 ## The three things worth internalising
 
