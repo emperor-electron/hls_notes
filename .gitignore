@@ -1,0 +1,14 @@
+# HLS build output
+hls_proj/
+*/hls_proj/
+build/
+vitis_hls.log
+vivado_hls.log
+*.log
+.Xil/
+hs_err_pid*.log
+
+# Tool droppings
+.autopilot/
+*.bak
+*~
