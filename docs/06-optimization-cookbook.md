@@ -1,5 +1,10 @@
 # 6 — Optimisation cookbook
 
+> For *writing* synthesisable C/C++ in the first place — types, loops,
+> functions, what does and doesn't synthesise — see
+> [docs/16](16-writing-good-hls-code.md). This document is about making code
+> that already synthesises go faster.
+
 ## 6.1 Order of operations
 
 Work in this order. Each step is cheap and each one invalidates conclusions

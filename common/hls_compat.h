@@ -2,7 +2,8 @@
 #define HLS_COMPAT_H
 
 /*
- * Version-portable AXI4-Stream typedefs.
+ * Version-portable AXI4-Stream typedefs, plus small helpers shared by every
+ * example in this repo (video and non-video alike).
  *
  * The name and layout of the AXI-Stream side-channel struct changed across
  * tool releases, which is the single most common reason a set of notes /
@@ -36,6 +37,27 @@
 #else
   #define HLS_COMPAT_VITIS 0
 #endif
+
+/* ---------------------------------------------------------------------------
+ * GENERIC stream words.
+ *
+ * AXI4-Stream is not a video thing -- it is the default point-to-point
+ * interface for any streaming HLS kernel: DSP, packet processing, compute
+ * offload. These typedefs carry no video semantics; TLAST simply marks the
+ * end of a packet/block and TUSER is free for you to define.
+ *
+ * Use hls::stream<T> with a bare T for INTERNAL dataflow channels, and an
+ * ap_axiu<> only where you cross a real AXI boundary -- see
+ * docs/05 section 5.1 for why carrying side channels internally wastes FIFO.
+ * ------------------------------------------------------------------------ */
+typedef ap_axiu<16, 1, 1, 1>  s16_axis_t;   /* 16-bit signed sample stream  */
+typedef hls::stream<s16_axis_t> s16_stream_t;
+
+typedef ap_axiu<32, 1, 1, 1>  w32_axis_t;   /* 32-bit word stream           */
+typedef hls::stream<w32_axis_t> w32_stream_t;
+
+typedef ap_axiu<8, 1, 1, 1>   byte_axis_t;  /* byte stream (packets, RLE)   */
+typedef hls::stream<byte_axis_t> byte_stream_t;
 
 /*
  * Canonical video stream word.

@@ -73,6 +73,23 @@ Symptom → cause → where to read.
 | Hardware differs from the model by fractions of an LSB | A narrow named intermediate is an unintended quantisation point | [docs/12 §12.3](12-fixed-point.md#123-bit-growth-and-where-precision-is-actually-lost) |
 | Debug signal "optimised away" | It is not an output, so HLS deleted it | [docs/15 §15.3](15-design-for-test.md#153-tier-2--debug-wires-and-an-ila) |
 
+## 8.3d General C/C++ and compute kernels
+
+| Symptom | Cause | See |
+|---|---|---|
+| `malloc`/`new`/STL/recursion won't synthesise | Not synthesisable — but fine in the **testbench** | [docs/16 §16.2](16-writing-good-hls-code.md#162-what-does-not-synthesise) |
+| Far more LUTs/DSPs than expected | `int` everywhere instead of sized types | [docs/16 §16.3](16-writing-good-hls-code.md#163-types) |
+| One multiply costs 4 DSPs | Operand exceeded the DSP's native 27×18 | [ex. 14](../examples/14_fir_filter) |
+| Reduction loop stuck at II=N | Single accumulator; split into partial sums | [ex. 15](../examples/15_matmul_tiled) |
+| Tiled kernel won't hit target II | A and B partitioned on the same dimension — they need opposite ones | [ex. 15](../examples/15_matmul_tiled) |
+| Memory-bound compute kernel | Strided access can't burst; tile it | [ex. 15](../examples/15_matmul_tiled) |
+| Filter output is saturated but "nearly right" | `=` used where `.range()` was meant at a bus edge | [ex. 14](../examples/14_fir_filter) |
+| Filter produces silence | Unsupported config fell through to an all-zero table | [docs/16 §16.9](16-writing-good-hls-code.md#169-style-that-pays-off) |
+| `hist[v]++` blamed for II | On 2023.2 it is II=1 already; check **timing**, not II | [ex. 16](../examples/16_histogram_dependence) |
+| Counts lost at runtime but csim passes | `DEPENDENCE inter false` asserted over a real dependency | [ex. 16](../examples/16_histogram_dependence) |
+| csim and csynth disagree, source looks identical | Logic hidden inside `#ifndef __SYNTHESIS__` | [docs/16 §16.8](16-writing-good-hls-code.md#168-the-__synthesis__-asymmetry) |
+| Loop shows as `VITIS_LOOP_144_5` in reports | Loop not labelled | [docs/16 §16.9](16-writing-good-hls-code.md#169-style-that-pays-off) |
+
 ## 8.4 Too slow
 
 | Symptom | Cause | See |
